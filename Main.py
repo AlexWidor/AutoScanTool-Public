@@ -1,6 +1,7 @@
-import sys
-import asyncio
+import sys, asyncio, os
 
+# Set enviroment table to empty to use chromium bundled with pyinstaller
+os.environ['PLAYWRIGHT_BROWSERS_PATH'] = ''
 
 class IServManager:
     def __init__(self):

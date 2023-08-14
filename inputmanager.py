@@ -31,15 +31,14 @@ class InputManager:
             self.user_inputs['MDM_PASSWORD'] = MDM_PASSWORD
 
         except (ImportError, ValueError):
-            self.user_inputs['MDM_APPLE_ID'] = input("Bitte geben Sie Ihre ASM-Apple-ID ein: ")
-            self.user_inputs['MDM_PASSWORD'] = input("Bitte geben Sie Ihr ASM-Passwort ein: ")
+            self.user_inputs['MDM_APPLE_ID'] = input("ASM-Apple-ID: ")
+            self.user_inputs['MDM_PASSWORD'] = input("ASM-Passwort: ")
 
         finally:
             return self.user_inputs['MDM_APPLE_ID'], self.user_inputs['MDM_PASSWORD']
 
     def get_iserv_url(self):
         import re
-        from configmanager import save_credentials, load_config
 
         url = input("Bitte geben Sie die IServ-URL Ihrer Schule ein: ")
         match = re.search(r'(https://.*?/iserv)', url)

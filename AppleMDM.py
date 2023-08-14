@@ -54,16 +54,16 @@ def fetch_auth_cookie(apple_id: str, apple_password: str):
             if page.frame_locator("iframe[name=\"aid-auth-widget\"]").locator("#sign_in_form").is_visible():
                 page.frame_locator("iframe[name=\"aid-auth-widget\"]").locator("#sign_in_form").click()
         else:
-            print("No sign in form found")
+            pass
 
     def two_factor_auth(page):
         if page.frame_locator("iframe[name=\"aid-auth-widget\"]").get_by_role("heading", name="Two-factor authentication").is_visible():
-            sms_code = input("Please enter the SMS code: ")
+            sms_code = input("SMS-Code eingeben: ")
             for i, digit in enumerate(sms_code, start=1):
                 page.frame_locator("iframe[name=\"aid-auth-widget\"]").get_by_label(f"Digit {i}").fill(digit)
             page.frame_locator("iframe[name=\"aid-auth-widget\"]").get_by_role("button", name="Trust", exact=True).click()
         else:
-            print("No two-factor authentication form found")
+            pass
 
     def save_cookies(context):
         cookies = context.cookies()
@@ -89,7 +89,8 @@ def fetch_auth_cookie(apple_id: str, apple_password: str):
         two_factor_auth(page)
 
         page.goto("https://school.apple.com/#/main/users")
-
+        time.sleep(10)
+        
         save_cookies(context)
         auth_cookies = extract_auth_cookies(context)
 
