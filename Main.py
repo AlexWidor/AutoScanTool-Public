@@ -74,7 +74,7 @@ class IServManager:
 
                     # Check status for error handling
                     if status:
-                        print(f"\033[92mSeriennummer {serial_number} an Apple MDM gesendet.\033[0m")
+                        print(f"\033[92mSeriennummer {serial_number} erfolgreich an Apple MDM gesendet.\033[0m")
                     else:
                         print(f"\033[91mFehler beim Senden der Seriennummer {serial_number} an Apple MDM.\033[0m")
                         await self.iserv.close()
@@ -101,7 +101,7 @@ class IServManager:
             self.timer_task = asyncio.create_task(self.wait_and_press())
 
     async def wait_and_press(self):
-        await asyncio.sleep(10.0)
+        await asyncio.sleep(30.0)
         await self.iserv.press_DEP()
 
         sys.stdout.write('\033[2K\033[1G')

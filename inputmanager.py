@@ -3,6 +3,8 @@ class InputManager:
         self.user_inputs = {}
 
     def get_iserv_credentials(self):
+        import os
+        
         try:
             from configmanager import load_iserv_credentials
             iserv_username, iserv_password, iserv_admin_password = load_iserv_credentials()
@@ -19,6 +21,7 @@ class InputManager:
                 print("Admin-Passwort wurde nicht angegeben. Normales Passwort wird als Admin-Passwort verwendet.")
 
         finally:
+            os.system('cls' if os.name == 'nt' else 'clear')
             return self.user_inputs['iserv_username'], self.user_inputs['iserv_password'], self.user_inputs['iserv_admin_password']
 
     def get_mdm_credentials(self):
@@ -34,7 +37,7 @@ class InputManager:
         except (ImportError, ValueError):
             self.user_inputs['MDM_APPLE_ID'] = input("ASM-Apple-ID: ")
             self.user_inputs['MDM_PASSWORD'] = input("ASM-Passwort: ")
-            # os.system('cls' if os.name == 'nt' else 'clear')
+            os.system('cls' if os.name == 'nt' else 'clear')
 
         finally:
             return self.user_inputs['MDM_APPLE_ID'], self.user_inputs['MDM_PASSWORD']
