@@ -23,7 +23,7 @@ def load_config():
         with open("config.yaml", 'w') as ymlfile:
             print("First time setup: Creating config.yaml")
             print("Headless kann im config auf 'false' gesetzt werden, um den Browser beim Ausführen zu sehen.")
-            ymlfile.write("headless: false  # Wenn auf 'true' gesetzt, wird der Browser im Hintergrund ausgefuehrt\n")
+            ymlfile.write("headless: true  # Wenn auf 'true' gesetzt, wird der Browser im Hintergrund ausgefuehrt\n")
             ymlfile.write("school_id: null\n")
             ymlfile.write("cookie: null\n")
 

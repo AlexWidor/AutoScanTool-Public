@@ -4,15 +4,30 @@ from configmanager import load_config
 from playwright.async_api import async_playwright
 import asyncio
 
+import atexit
+import asyncio
+from inputmanager import InputManager
+from configmanager import load_config
+from playwright.async_api import async_playwright
+
 class AutoIserv:
     def __init__(self):
         self.playwright = None
         self.browser = None
         self.context = None
         self.page = None
-        
-        
         _, self.headless = load_config()
+
+        # Register the cleanup function
+        atexit.register(self.cleanup)
+
+    def cleanup(self):
+        if self.context:
+            asyncio.run(self.context.close())
+        if self.browser:
+            asyncio.run(self.browser.close())
+        if self.playwright:
+            asyncio.run(self.playwright.stop())
 
     async def start(self):
         self.playwright = await async_playwright().start()

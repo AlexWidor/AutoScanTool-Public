@@ -22,6 +22,7 @@ class InputManager:
             return self.user_inputs['iserv_username'], self.user_inputs['iserv_password'], self.user_inputs['iserv_admin_password']
 
     def get_mdm_credentials(self):
+        import os
         try:
             from configmanager import load_mdm_credentials
             MDM_APPLE_ID, MDM_PASSWORD = load_mdm_credentials()
@@ -33,6 +34,7 @@ class InputManager:
         except (ImportError, ValueError):
             self.user_inputs['MDM_APPLE_ID'] = input("ASM-Apple-ID: ")
             self.user_inputs['MDM_PASSWORD'] = input("ASM-Passwort: ")
+            # os.system('cls' if os.name == 'nt' else 'clear')
 
         finally:
             return self.user_inputs['MDM_APPLE_ID'], self.user_inputs['MDM_PASSWORD']
@@ -107,10 +109,12 @@ class InputManager:
         config, _ = load_config()
         cookie = config.get('cookie', None)
         if cookie is not None:
-            response = requests.post("https://ws.school.apple.com/devices/ee/org/servers/filtered", cookies={'cookie': cookie})
-            if response.status_code == 200:
+            try:
+                response = requests.post("https://ws.school.apple.com/devices/ee/org/servers/filtered", cookies={'cookie': cookie})
+                response.raise_for_status()
                 print("Cookie is valid.")
-            else:
+            except Exception as err:
+                print(f"An error occurred: {err}")
                 print("Cookie is not valid. Fetching a new one...")
                 apple_id, apple_password = self.get_mdm_credentials()
                 cookie = fetch_auth_cookie(apple_id, apple_password)

@@ -47,6 +47,13 @@ class IServManager:
             # Prepare data
             data = [school_name, serial_number, current_time]
 
+
+
+            # Check if output.csv ex    ists, if not, create it
+            if not os.path.isfile('output.csv'):
+                with open('output.csv', 'w') as file:
+                    pass
+
             # Check if serial number is already in CSV
             with open('output.csv', 'r') as file:
                 reader = csv.reader(file)
@@ -56,17 +63,23 @@ class IServManager:
                     sys.stdout.write('\033[2K\033[1G')
                 else:
                     # Send to MDM
-                    # Save the return value of send_to_mdm in a different variable
-                    result = self.send_to_mdm(self.session, serial_number, self.selected_school, self.cfg)
+                    
+                    # Get status and result, assign result to self.session
+                    # It is important to use selected_school[1] instead of selected_school[0] because the first element is the school name
+                    status, result = self.send_to_mdm(self.session, serial_number, self.selected_school[1], self.cfg)
 
                     # Check if result is a session object before assigning it to self.session
                     if isinstance(result, type(self.session)):
                         self.session = result
 
-                    print(f"\033[92mSeriennummer {serial_number} an Apple MDM gesendet.\033[0m")
-
-
-
+                    # Check status for error handling
+                    if status:
+                        print(f"\033[92mSeriennummer {serial_number} an Apple MDM gesendet.\033[0m")
+                    else:
+                        print(f"\033[91mFehler beim Senden der Seriennummer {serial_number} an Apple MDM.\033[0m")
+                        await self.iserv.close()
+                        break
+                    
                     # Implement counter
                     if 'counter' not in globals():
                         global counter
