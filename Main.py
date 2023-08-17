@@ -109,6 +109,7 @@ class IServManager:
         print("Warte auf Barcode ('exit' eingeben, um zu beenden): ", end='', flush=True)
 
 def main():
+    import pygetwindow
     manager = IServManager()
     
     selected_school_index = manager.input_manager.get_school_selection(manager.session, manager.cfg)
@@ -116,7 +117,11 @@ def main():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(manager.iserv.start())
+
+    window = pygetwindow.getWindowsWithTitle('Chromium')[0]
+    window.minimize()
     loop.run_until_complete(manager.iserv.login())
     loop.run_until_complete(manager.process_barcode())
+
 if __name__ == "__main__":
     main()

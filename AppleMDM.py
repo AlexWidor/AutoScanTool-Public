@@ -39,7 +39,8 @@ def fetch_schools(session, config):
 def fetch_auth_cookie(apple_id: str, apple_password: str):
     import json, time
     from playwright.sync_api import Playwright, sync_playwright
-    print("\033[91mBitte NICHT mit dem Browser interagieren!\033[0m")
+    print("Haben Sie einen Moment Geduld...")
+    print("Bitte nicht mit dem Browser interagieren.")
 
     def load_cookies(context):
         try:
@@ -83,11 +84,18 @@ def fetch_auth_cookie(apple_id: str, apple_password: str):
         return '; '.join([f"{cookie['name']}={cookie['value']}" for cookie in cookies if cookie['name'] in ['myacinfo', 'apple_eesession']])
 
     def run(playwright: Playwright) -> None:
+        import pygetwindow
+
         with playwright.chromium.launch(headless=False) as browser:  # Headless mode is not supported by Apple
             with browser.new_context() as context:
                 load_cookies(context)
 
                 page = context.new_page()
+
+                # Minimize the browser window
+                window = pygetwindow.getWindowsWithTitle('Chromium')[0]
+                window.minimize()
+
                 page.goto("https://school.apple.com/")
                 
                 page.wait_for_timeout(5000)
@@ -96,6 +104,7 @@ def fetch_auth_cookie(apple_id: str, apple_password: str):
                 two_factor_auth(page)
 
                 page.goto("https://school.apple.com/#/main/users")
+                time.sleep(6)
                 
                 save_cookies(context)
                 auth_cookies = extract_auth_cookies(context)

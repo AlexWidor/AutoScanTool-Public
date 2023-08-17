@@ -22,8 +22,8 @@ def load_config():
     if not os.path.exists("config.yaml"):
         with open("config.yaml", 'w') as ymlfile:
             print("First time setup: Creating config.yaml")
-            print("Headless kann im config auf 'false' gesetzt werden, um den Browser beim Ausführen zu sehen.")
-            ymlfile.write("headless: true  # Wenn auf 'true' gesetzt, wird der Browser im Hintergrund ausgefuehrt\n")
+            print("Headless kann im config auf 'true' gesetzt werden")
+            ymlfile.write("headless: false  # Wenn auf 'true' gesetzt, wird der Browser im Hintergrund ausgefuehrt\n")
             ymlfile.write("school_id: null\n")
             ymlfile.write("cookie: null\n")
 
@@ -61,7 +61,7 @@ class CredentialManager:
         key = self.base64.urlsafe_b64encode(kdf.derive(masterpassword))
         return key
 
-    def save_credentials(self, masterpassword, iserv_username, iserv_masterpassword, iserv_admin_masterpassword, mdm_Apple_ID=None, mdm_masterpassword=None):
+    def save_credentials(self, masterpassword, iserv_username=None, iserv_masterpassword=None, iserv_admin_masterpassword=None, mdm_Apple_ID=None, mdm_masterpassword=None):
         salt = self.os.urandom(16)
         key = self.get_key(masterpassword, salt)
         f = self.Fernet(key)
@@ -78,22 +78,32 @@ class CredentialManager:
             credfile.write(salt + encrypted_iserv_credentials + encrypted_mdm_credentials)
 
     def load_credentials(self, masterpassword):
-        with open("credentials.txt", 'rb') as credfile:
-            data = credfile.read()
-            salt, encrypted_credentials = data[:16], data[16:]
-        key = self.get_key(masterpassword, salt)
-        f = self.Fernet(key)
+        from cryptography.fernet import InvalidToken
+        import sys
+        from main import main
 
-        # Decrypt and split credentials
-        decrypted_credentials = f.decrypt(encrypted_credentials).decode().split('\n')
+        try:
+            with open("credentials.txt", 'rb') as credfile:
+                data = credfile.read()
+                salt, encrypted_credentials = data[:16], data[16:]
+            key = self.get_key(masterpassword, salt)
+            f = self.Fernet(key)
 
-        # Assign iserv credentials
-        iserv_username, iserv_password, iserv_admin_password = decrypted_credentials[:3]
+            # Decrypt and split credentials
+            decrypted_credentials = f.decrypt(encrypted_credentials).decode().split('\n')
 
-        # Assign mdm credentials if they exist
-        if len(decrypted_credentials) >= 5:
-            mdm_Apple_ID, mdm_password = decrypted_credentials[3:5]
-        else:
-            mdm_Apple_ID, mdm_password = None, None
+            # Assign iserv credentials
+            iserv_username, iserv_password, iserv_admin_password = decrypted_credentials[:3]
 
-        return iserv_username, iserv_password, iserv_admin_password, mdm_Apple_ID, mdm_password
+            # Assign mdm credentials if they exist
+            if len(decrypted_credentials) >= 5:
+                mdm_Apple_ID, mdm_password = decrypted_credentials[3:5]
+            else:
+                mdm_Apple_ID, mdm_password = None, None
+
+            return iserv_username, iserv_password, iserv_admin_password, mdm_Apple_ID, mdm_password
+        except InvalidToken:
+            os.system("cls")
+            print("\033[91mUngültiges Passwort angegeben. Bitte versuchen Sie es erneut.\033[0m")
+            
+            main()

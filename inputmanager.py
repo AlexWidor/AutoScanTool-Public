@@ -1,47 +1,61 @@
 class InputManager:
     def __init__(self):
+        from configmanager import CredentialManager
         self.user_inputs = {}
+        self.masterpassword = None
+        self.credential_manager = CredentialManager()
+
+    def get_masterpassword(self):
+        import getpass
+        if self.masterpassword is None:
+            self.masterpassword = getpass.getpass("Bitte geben Sie Ihr Masterpasswort ein: ")
+        return self.masterpassword
 
     def get_iserv_credentials(self):
         import os
-        
-        try:
-            from configmanager import load_iserv_credentials
-            iserv_username, iserv_password, iserv_admin_password = load_iserv_credentials()
-            self.user_inputs['iserv_username'] = iserv_username
-            self.user_inputs['iserv_password'] = iserv_password
-            self.user_inputs['iserv_admin_password'] = iserv_admin_password if iserv_admin_password else iserv_password
+        self.user_inputs['iserv_username'] = input("Bitte geben Sie Ihren IServ-Benutzernamen ein: ")
+        self.user_inputs['iserv_password'] = input("Bitte geben Sie Ihr IServ-Passwort ein: ")
+        self.user_inputs['iserv_admin_password'] = input("Bitte geben Sie Ihr IServ-Admin-Passwort ein (falls leer, wird das normale Passwort verwendet): ")
+        if not self.user_inputs['iserv_admin_password']:
+            self.user_inputs['iserv_admin_password'] = self.user_inputs['iserv_password']
+            print("Admin-Passwort wurde nicht angegeben. Normales Passwort wird als Admin-Passwort verwendet.")
 
-        except:
-            self.user_inputs['iserv_username'] = input("Bitte geben Sie Ihren IServ-Benutzernamen ein: ")
-            self.user_inputs['iserv_password'] = input("Bitte geben Sie Ihr IServ-Passwort ein: ")
-            self.user_inputs['iserv_admin_password'] = input("Bitte geben Sie Ihr IServ-Admin-Passwort ein (falls leer, wird das normale Passwort verwendet): ")
-            if not self.user_inputs['iserv_admin_password']:
-                self.user_inputs['iserv_admin_password'] = self.user_inputs['iserv_password']
-                print("Admin-Passwort wurde nicht angegeben. Normales Passwort wird als Admin-Passwort verwendet.")
+        # Save the entered credentials
+        # self.credential_manager.save_credentials(self.masterpassword, self.user_inputs['iserv_username'], self.user_inputs['iserv_password'], self.user_inputs['iserv_admin_password'])
+        os.system('cls' if os.name == 'nt' else 'clear')
 
-        finally:
-            os.system('cls' if os.name == 'nt' else 'clear')
-            return self.user_inputs['iserv_username'], self.user_inputs['iserv_password'], self.user_inputs['iserv_admin_password']
+        return self.user_inputs['iserv_username'], self.user_inputs['iserv_password'], self.user_inputs['iserv_admin_password']
 
     def get_mdm_credentials(self):
         import os
-        try:
-            from configmanager import load_mdm_credentials
-            MDM_APPLE_ID, MDM_PASSWORD = load_mdm_credentials()
+
+        # Get the master password
+        self.masterpassword = self.get_masterpassword()
+
+        # Check if credentials file exists
+        if not os.path.exists("credentials.txt") or os.path.getsize("credentials.txt") == 0:
+            # If not, create an empty file
+            with open('credentials.txt', 'w') as f:
+                f.write('')
+            MDM_APPLE_ID = input("ASM-Apple-ID: ")
+            MDM_PASSWORD = input("ASM-Passwort: ")
+        else:
+            # Try to load credentials
+            MDM_APPLE_ID, MDM_PASSWORD, _, _, _  = self.credential_manager.load_credentials(self.masterpassword)
+
+            # If credentials are not found, ask the user for them
             if MDM_APPLE_ID is None or MDM_PASSWORD is None:
-                raise ValueError("Anmeldeinformationen nicht gefunden")
-            self.user_inputs['MDM_APPLE_ID'] = MDM_APPLE_ID
-            self.user_inputs['MDM_PASSWORD'] = MDM_PASSWORD
+                MDM_APPLE_ID = input("ASM-Apple-ID: ")
+                MDM_PASSWORD = input("ASM-Passwort: ")
 
-        except (ImportError, ValueError):
-            self.user_inputs['MDM_APPLE_ID'] = input("ASM-Apple-ID: ")
-            self.user_inputs['MDM_PASSWORD'] = input("ASM-Passwort: ")
-            os.system('cls' if os.name == 'nt' else 'clear')
+        # Save the entered credentials
+        self.credential_manager.save_credentials(self.masterpassword, MDM_APPLE_ID, MDM_PASSWORD)
 
-        finally:
-            return self.user_inputs['MDM_APPLE_ID'], self.user_inputs['MDM_PASSWORD']
+        # Clear the console
+        os.system('cls' if os.name == 'nt' else 'clear')
 
+        return MDM_APPLE_ID, MDM_PASSWORD
+    
     def get_iserv_url(self):
         import re
 
@@ -117,7 +131,7 @@ class InputManager:
                 response.raise_for_status()
                 print("Cookie is valid.")
             except Exception as err:
-                print(f"An error occurred: {err}")
+                print(err)
                 print("Cookie is not valid. Fetching a new one...")
                 apple_id, apple_password = self.get_mdm_credentials()
                 cookie = fetch_auth_cookie(apple_id, apple_password)
