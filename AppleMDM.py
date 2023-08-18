@@ -1,5 +1,6 @@
 import requests
 
+
 # Create a session with the given cookie
 def create_session(cookie):
     from configmanager import HEADERS
@@ -37,8 +38,10 @@ def fetch_schools(session, config):
         return [], session
 
 def fetch_auth_cookie(apple_id: str, apple_password: str):
-    import json, time
+    import json, os
+    os.environ['PLAYWRIGHT_BROWSERS_PATH'] = os.path.dirname(os.path.abspath(__file__))
     from playwright.sync_api import Playwright, sync_playwright
+
     print("Haben Sie einen Moment Geduld...")
     print("Bitte nicht mit dem Browser interagieren.")
 
@@ -51,26 +54,44 @@ def fetch_auth_cookie(apple_id: str, apple_password: str):
             pass
 
     def sign_in(page, apple_id, apple_password):
-        if page.frame_locator("iframe[name=\"aid-auth-widget\"]").get_by_role("heading", name="Manage your organisation’s devices, apps and accounts.").is_visible():
-            page.frame_locator("iframe[name=\"aid-auth-widget\"]").get_by_label("Sign in with your Apple ID").click(timeout=5000)
-            page.frame_locator("iframe[name=\"aid-auth-widget\"]").get_by_label("Sign in with your Apple ID").fill(apple_id)
-            page.wait_for_timeout(1000)
-            page.frame_locator("iframe[name=\"aid-auth-widget\"]").get_by_label("Sign in with your Apple ID").press("Enter")
-            page.frame_locator("iframe[name=\"aid-auth-widget\"]").get_by_label("Password").click()
-            page.frame_locator("iframe[name=\"aid-auth-widget\"]").get_by_label("Password").fill(apple_password)
-            page.wait_for_timeout(1000)
-            page.frame_locator("iframe[name=\"aid-auth-widget\"]").get_by_label("Password").press("Enter")
-            if page.frame_locator("iframe[name=\"aid-auth-widget\"]").locator("#sign_in_form").is_visible():
-                page.frame_locator("iframe[name=\"aid-auth-widget\"]").locator("#sign_in_form").click()
-        else:
+        try:
+            if page.locator("#auth-container").is_visible():
+                iframe_element_handle = page.locator("#aid-auth-widget-iFrame").element_handle()
+                iframe = iframe_element_handle.content_frame()
+                iframe.locator("#account_name_text_field").click()
+                iframe.locator("#account_name_text_field").fill(apple_id)
+                iframe.wait_for_timeout(1000)
+                iframe.locator("#account_name_text_field").press("Enter")
+
+                iframe.locator("#password_text_field").click()
+                iframe.locator("#password_text_field").fill(apple_password)
+                iframe.wait_for_timeout(1000)
+                iframe.locator("#password_text_field").press("Enter")
+
+            else:
+                print("Not found")
+                
+        except:
             pass
 
     def two_factor_auth(page):
-        if page.frame_locator("iframe[name=\"aid-auth-widget\"]").get_by_role("heading", name="Two-factor authentication").is_visible():
-            sms_code = input("SMS-Code eingeben: ")
-            for i, digit in enumerate(sms_code, start=1):
-                page.frame_locator("iframe[name=\"aid-auth-widget\"]").get_by_label(f"Digit {i}").fill(digit)
-            page.frame_locator("iframe[name=\"aid-auth-widget\"]").get_by_role("button", name="Trust", exact=True).click()
+        if page.locator("#auth-container").is_visible():
+            iframe_element_handle = page.locator("#aid-auth-widget-iFrame").element_handle()
+            iframe = iframe_element_handle.content_frame()
+            
+            while True:
+                sms_code = input("Enter SMS Code: ")
+                if len(sms_code) != 6:
+                    print("Ungültiger Code. Er sollte 6 Ziffern lang sein. Bitte erneut versuchen.")
+                    continue
+                for i, digit in enumerate(sms_code, start=0):  # start from 0 as index is 0-based
+                    print(i, digit)
+                    iframe.fill(f'#char{i}', digit)  # replace '#char{i}' with the actual selector of your input field
+                break
+            
+            iframe.wait_for_timeout(1000)
+            iframe.get_by_role("button", name="Vertrauen", exact=True).click()
+
         else:
             pass
 
@@ -87,7 +108,7 @@ def fetch_auth_cookie(apple_id: str, apple_password: str):
         import pygetwindow
 
         with playwright.chromium.launch(headless=False) as browser:  # Headless mode is not supported by Apple
-            with browser.new_context() as context:
+            with browser.new_context(locale="de-DE", timezone_id="Europe/Berlin") as context:
                 load_cookies(context)
 
                 page = context.new_page()
@@ -96,15 +117,12 @@ def fetch_auth_cookie(apple_id: str, apple_password: str):
                 window = pygetwindow.getWindowsWithTitle('Chromium')[0]
                 window.minimize()
 
-                page.goto("https://school.apple.com/")
-                
-                page.wait_for_timeout(5000)
-                sign_in(page, apple_id, apple_password)
-                page.wait_for_timeout(5000)
-                two_factor_auth(page)
+                page.goto("https://school.apple.com/", wait_until="domcontentloaded")
 
-                page.goto("https://school.apple.com/#/main/users")
-                time.sleep(6)
+                sign_in(page, apple_id, apple_password)
+                two_factor_auth(page)
+                
+                page.wait_for_load_state("networkidle", timeout=10000)
                 
                 save_cookies(context)
                 auth_cookies = extract_auth_cookies(context)

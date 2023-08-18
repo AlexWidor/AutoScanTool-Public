@@ -1,8 +1,9 @@
 # Diese Klasse ist für die Interaktion mit IServ zuständig (Anmelden, Geräte hinzufügen, etc.)
+import asyncio, atexit, os, sys
+os.environ['PLAYWRIGHT_BROWSERS_PATH'] = os.path.dirname(os.path.abspath(__file__))
 from inputmanager import InputManager
 from configmanager import load_config
 from playwright.async_api import async_playwright
-import asyncio, atexit, os, sys
 
 
 
@@ -28,7 +29,7 @@ class AutoIserv:
     async def start(self):
         self.playwright = await async_playwright().start()
         self.browser = await self.playwright.chromium.launch(headless=self.headless)
-        self.context = await self.browser.new_context()
+        self.context = await self.browser.new_context(locale="de-DE", timezone_id="Europe/Berlin")
         self.page = await self.context.new_page()
 
     async def login(self):
