@@ -37,13 +37,12 @@ def fetch_schools(session, config):
     else:
         return [], session
 
-def fetch_auth_cookie(apple_id: str, apple_password: str):
+def fetch_auth_cookie():
     import json, os
     os.environ['PLAYWRIGHT_BROWSERS_PATH'] = os.path.dirname(os.path.abspath(__file__))
     from playwright.sync_api import Playwright, sync_playwright
 
-    print("Haben Sie einen Moment Geduld...")
-    print("Bitte nicht mit dem Browser interagieren.")
+    print("Bitte logge dich im ASM ein. Der Browser wird automatisch geschlossen, sobald die Cookies gespeichert wurden.")
 
     def load_cookies(context):
         try:
@@ -51,48 +50,6 @@ def fetch_auth_cookie(apple_id: str, apple_password: str):
                 cookies = json.load(f)
                 context.add_cookies(cookies)
         except FileNotFoundError:
-            pass
-
-    def sign_in(page, apple_id, apple_password):
-        try:
-            if page.locator("#auth-container").is_visible():
-                iframe_element_handle = page.locator("#aid-auth-widget-iFrame").element_handle()
-                iframe = iframe_element_handle.content_frame()
-                iframe.locator("#account_name_text_field").click()
-                iframe.locator("#account_name_text_field").fill(apple_id)
-                iframe.wait_for_timeout(1000)
-                iframe.locator("#account_name_text_field").press("Enter")
-
-                iframe.locator("#password_text_field").click()
-                iframe.locator("#password_text_field").fill(apple_password)
-                iframe.wait_for_timeout(1000)
-                iframe.locator("#password_text_field").press("Enter")
-
-            else:
-                print("Not found")
-                
-        except:
-            pass
-
-    def two_factor_auth(page):
-        if page.locator("#auth-container").is_visible():
-            iframe_element_handle = page.locator("#aid-auth-widget-iFrame").element_handle()
-            iframe = iframe_element_handle.content_frame()
-            
-            while True:
-                sms_code = input("Enter SMS Code: ")
-                if len(sms_code) != 6:
-                    print("Ungültiger Code. Er sollte 6 Ziffern lang sein. Bitte erneut versuchen.")
-                    continue
-                for i, digit in enumerate(sms_code, start=0):  # start from 0 as index is 0-based
-                    print(i, digit)
-                    iframe.fill(f'#char{i}', digit)  # replace '#char{i}' with the actual selector of your input field
-                break
-            
-            iframe.wait_for_timeout(1000)
-            iframe.get_by_role("button", name="Vertrauen", exact=True).click()
-
-        else:
             pass
 
     def save_cookies(context):
@@ -105,29 +62,32 @@ def fetch_auth_cookie(apple_id: str, apple_password: str):
         return '; '.join([f"{cookie['name']}={cookie['value']}" for cookie in cookies if cookie['name'] in ['myacinfo', 'apple_eesession']])
 
     def run(playwright: Playwright) -> None:
-        import pygetwindow
-
         with playwright.chromium.launch(headless=False) as browser:  # Headless mode is not supported by Apple
             with browser.new_context(locale="de-DE", timezone_id="Europe/Berlin") as context:
                 load_cookies(context)
 
                 page = context.new_page()
+                page.goto("https://school.apple.com/", wait_until="networkidle")
 
-                # Minimize the browser window
-                window = pygetwindow.getWindowsWithTitle('Chromium')[0]
-                window.minimize()
-
-                page.goto("https://school.apple.com/", wait_until="domcontentloaded")
-
-                sign_in(page, apple_id, apple_password)
-                two_factor_auth(page)
+                # Make really sure that the page is loaded to get cookies
+                page.wait_for_timeout(3000)
+                page.wait_for_load_state("domcontentloaded")
                 
-                page.wait_for_load_state("networkidle", timeout=10000)
+                # Wait for the element with id "cw-aria-live-region" to load
+                page.frame_locator("iframe[name=\"MainPortal\"]").get_by_label("Geräte", exact=True).click(timeout=0) 
                 
-                save_cookies(context)
+
                 auth_cookies = extract_auth_cookies(context)
-
-                return auth_cookies
+                if auth_cookies is None:
+                    print("Fehler beim Abrufen der Authentifizierungs-Cookies. Bitte gib diese manuell ein.")
+                    auth_cookies = input("Cookie eingeben: ")
+                    return auth_cookies
+                else:
+                    save_cookies(context)
+                    return auth_cookies
     
     with sync_playwright() as playwright:
         return run(playwright)
+    
+if __name__ == '__main__':
+    fetch_auth_cookie()

@@ -1,15 +1,7 @@
 class InputManager:
     def __init__(self):
-        from configmanager import CredentialManager
         self.user_inputs = {}
-        self.masterpassword = None
-        self.credential_manager = CredentialManager()
 
-    def get_masterpassword(self):
-        import getpass
-        if self.masterpassword is None:
-            self.masterpassword = getpass.getpass("Bitte geben Sie Ihr Masterpasswort ein: ")
-        return self.masterpassword
 
     def get_iserv_credentials(self):
         import os
@@ -25,62 +17,23 @@ class InputManager:
         os.system('cls' if os.name == 'nt' else 'clear')
 
         return self.user_inputs['iserv_username'], self.user_inputs['iserv_password'], self.user_inputs['iserv_admin_password']
-
-    def get_mdm_credentials(self):
-        import os
-
-        # Get the master password
-        self.masterpassword = self.get_masterpassword()
-
-        # Check if credentials file exists
-        if not os.path.exists("credentials.txt") or os.path.getsize("credentials.txt") == 0:
-            # If not, create an empty file
-            with open('credentials.txt', 'w') as f:
-                f.write('')
-            MDM_APPLE_ID = input("ASM-Apple-ID: ")
-            MDM_PASSWORD = input("ASM-Passwort: ")
-        else:
-            # Try to load credentials
-            MDM_APPLE_ID, MDM_PASSWORD, _, _, _  = self.credential_manager.load_credentials(self.masterpassword)
-
-            # If credentials are not found, ask the user for them
-            if MDM_APPLE_ID is None or MDM_PASSWORD is None:
-                MDM_APPLE_ID = input("ASM-Apple-ID: ")
-                MDM_PASSWORD = input("ASM-Passwort: ")
-
-        # Save the entered credentials
-        self.credential_manager.save_credentials(self.masterpassword, MDM_APPLE_ID, MDM_PASSWORD)
-
-        # Clear the console
-        os.system('cls' if os.name == 'nt' else 'clear')
-
-        return MDM_APPLE_ID, MDM_PASSWORD
     
     def get_iserv_url(self):
         import re
 
-        url = input("Bitte geben Sie die IServ-URL Ihrer Schule ein: ")
+        url = input("IServ-URL Ihrer Schule eingeben: ")
         match = re.search(r'(https://.*?/iserv)', url)
         if match:
             self.user_inputs['iserv_url'] = match.group(1) + '/admin/mdm/ios/dep'
         else:
-            print("Die eingegebene URL entspricht nicht dem erwarteten Format. Bitte stellen Sie sicher, dass die URL mit 'https://' beginnt und '/iserv' enthält.")
+            print("Die eingegebene URL entspricht nicht dem erwarteten Format. Bitte stellen sicher, dass die URL mit 'https://' beginnt und '/iserv' enthält.")
             self.user_inputs['iserv_url'] = None
 
         return self.user_inputs['iserv_url']
 
-    def get_save_iserv(self):
-        self.user_inputs['save_iserv'] = input("Möchten Sie Ihre IServ-Anmeldeinformationen speichern? (j/N): ")
-        return self.user_inputs['save_iserv'].lower() in ['j', 'y']
-
-    def get_save_mdm(self):
-        self.user_inputs['save_mdm'] = input("Möchten Sie Ihre MDM-Anmeldeinformationen speichern? (j/N): ")
-        return self.user_inputs['save_mdm'].lower() in ['j', 'y']
-
     def get_school_selection(self, session, config):
         from AppleMDM import fetch_schools
         from configmanager import load_config, save_config
-        import os
 
         # Load the previously selected school from the config and fetch all schools
         cfg, _ = load_config()
@@ -129,24 +82,22 @@ class InputManager:
             try:
                 response = requests.post("https://ws.school.apple.com/devices/ee/org/servers/filtered", cookies={'cookie': cookie})
                 response.raise_for_status()
-                print("Cookie is valid.")
+                print("Cookie ist gültig.")
             except Exception as err:
                 print(err)
-                print("Cookie is not valid. Fetching a new one...")
-                apple_id, apple_password = self.get_mdm_credentials()
-                cookie = fetch_auth_cookie(apple_id, apple_password)
+                print("Cookie ist nicht gültig. Ein neues wird abgerufen...")
+                cookie = fetch_auth_cookie()
                 if cookie is None:
-                    print("Failed to fetch a new cookie. Please enter it manually.")
-                    cookie = input("Please enter the cookie: ")
+                    print("Das Abrufen eines neuen Cookies ist fehlgeschlagen. Bitte gib es manuell ein.")
+                    cookie = input("Cookie eingeben: ")
                 config['cookie'] = cookie
                 save_config(config)
         else:
-            print("No cookie found in config. Fetching a new one...")
-            apple_id, apple_password = self.get_mdm_credentials()
-            cookie = fetch_auth_cookie(apple_id, apple_password)
+            print("Kein Cookie in der Konfiguration gefunden. Ein neues wird abgerufen...")
+            cookie = fetch_auth_cookie()
             if cookie is None:
-                print("Failed to fetch a new cookie. Please enter it manually.")
-                cookie = input("Please enter the cookie: ")
+                print("Das Abrufen eines neuen Cookies ist fehlgeschlagen. Bitte gib es manuell ein.")
+                cookie = input("ookie eingeben: ")
             config['cookie'] = cookie
             save_config(config)
         
