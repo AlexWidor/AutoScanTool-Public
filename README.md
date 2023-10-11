@@ -41,29 +41,27 @@ For manual installation, the following prerequisites must be met:
    python main.py
    ```
 
-2. **Input your credentials:** The script will prompt for your IServ and MDM credentials each time you run it.
-    - For IServ, input your username, password, and admin password.
-    - For MDM, input your Apple ID and password.
+2. **Input your credentials:** The script will prompt for your IServ credentials each time you run it.
 
-3. **Obtain cookies:** The script logs into Apple School Manager to obtain cookies. Avoid browser interaction during this process and follow console instructions.
+3. **Obtain cookies:** The script will open Apple School Manager to obtain cookies. Login using your credentials. 2FA Should only be needed once
 
-4. **Select a school:** After fetching cookies, you will get a list of all schools in the MDM. Select your school in the Console. Your selection will be saved for quickstart on the next execution.
+4. **Select a school:** After fetching cookies, you will get a list of all schools in the ASM. Select your school in the Console. Your selection will be saved for quickstart on the next execution.
 
 5. **Log into IServ:** The script will initiate a browser session and log into IServ.
 
 6. **Wait for a barcode scan:** The script will then wait for a barcode scan. Typing 'exit' will close the browser session and terminate the script.
 
-7. **Assign iPads:** Each scan sends the Serial Number to Apple MDM and starts a 10-second timer. After the timer executes, the iPads will be assigned using IServ.
+7. **Assign iPads:** Each scan sends the Serial Number to ASM and starts a 10-second timer. After the timer executes, the iPads will be assigned using IServ.
 
 ## Limitations
 
-- The script currently does not support loading and saving of credentials due to the lack of encryption implementation.
 - Only 9th iPads are supported at the moment.
 
 ## Future Enhancements
 
+- Automaticly fetch URLs for IServ using ASM
 - Extend support to other iPad models.
 
 ## Changelog
 
-- Automated retrieval of Apple-MDM cookies using Playwright. (Completed)
+- Automated retrieval of Apple-ASM cookies using Playwright. (Completed)
