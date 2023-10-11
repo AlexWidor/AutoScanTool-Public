@@ -62,10 +62,8 @@ For manual installation, the following prerequisites must be met:
 
 ## Future Enhancements
 
-- Implement encrypted password storage.
 - Extend support to other iPad models.
 
 ## Changelog
 
 - Automated retrieval of Apple-MDM cookies using Playwright. (Completed)
-- Simplified IServ URLs input using Regex, considering a database as an alternative. (Completed, Database Ongoing)
